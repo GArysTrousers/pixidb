@@ -48,24 +48,28 @@ export class Table<T extends Row> {
    * input may contain more props and will return true
    */
   validate(input: any, schema: object = this.schemaObject) {
+    console.log(input);
+    
     try {
       if (this.schemaObject != null) {
-        for (let [prop, type] of Object.entries(this.schemaObject)) {
+        for (let [prop, type] of Object.entries(schema)) {
           if (typeof (type) == 'string') {
             if (!(prop in input)) {
-              throw "Prop not in input"
+              throw ("Prop not in input: " + prop)
             }
             if (type == 'array') {
               if (!Array.isArray(input[prop]))
                 throw "Input was not an array"
             }
             else if (!(typeof (input[prop]) == type)) {
-              throw "Input was wrong type"
+              throw (`Input was wrong type ${prop} ${type} ${typeof (input[prop])}`)
             }
           }
-          else if (typeof (type) == 'object') {
+          else if (typeof (type) == 'object') {            
             if (Array.isArray(input[prop]))
               throw "Schema contains an array object"
+            console.log(input, prop);
+            
             if (!this.validate(input[prop], type))
               return false
           }
