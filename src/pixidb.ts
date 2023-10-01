@@ -1,9 +1,5 @@
 import { readFileSync, writeFileSync, accessSync } from "node:fs";
 
-export interface Row {
-  id: string;
-}
-
 export enum LogLevel {
   None,
   Init,
@@ -11,13 +7,19 @@ export enum LogLevel {
   Verbose
 }
 
+export interface Row {
+  id: string;
+}
+
+export type SchemaObject = { [key: string]: 'any' | 'string' | 'boolean' | 'array' | SchemaObject }
+
 export class Table<T extends Row> {
   static loglevel = LogLevel.None
   saveTimer: NodeJS.Timer | null = null;
   dbPath: string | null;
   name: string;
   tablePath: string;
-  schemaObject: object | null = null;
+  schemaObject: SchemaObject | null = null;
   private rows: T[];
 
   /**
@@ -49,7 +51,8 @@ export class Table<T extends Row> {
     }
   }
 
-  schema(schemaObject: object) {
+  /** Sets the schema for the table (chainable) */
+  schema(schemaObject: SchemaObject | null): Table<T> {
     this.schemaObject = schemaObject
     return this
   }
@@ -69,11 +72,14 @@ export class Table<T extends Row> {
           console.log(input);
         }
         for (let [schemaProp, schemaType] of Object.entries(schema)) {
-          if (typeof (schemaType) == 'string') {
+          if (typeof (schemaType) === 'string') {
             if (!(schemaProp in input)) {
               throw ("Prop not in input: " + schemaProp)
             }
-            if (schemaType == 'array') {
+            if (schemaType === 'any') {
+              return true
+            }
+            else if (schemaType === 'array') {
               if (!Array.isArray(input[schemaProp]))
                 throw "Input was not an array"
             }
@@ -81,7 +87,7 @@ export class Table<T extends Row> {
               throw (`Input was wrong type ${schemaProp} ${schemaType} ${typeof (input[schemaProp])}`)
             }
           }
-          else if (typeof (schemaType) == 'object') {
+          else if (typeof (schemaType) === 'object') {
             if (Array.isArray(input[schemaProp]))
               throw "Schema contains an array object"
 
