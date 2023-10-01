@@ -3,9 +3,7 @@ import assert from "node:assert/strict";
 
 import { Table } from "../dist/pixidb.js";
 
-
-
-test("valid entry - lvl 1", () => {
+test("schema: basic types", () => {
 
   let users = new Table('users', null).schema({
     id: 'string',
@@ -20,7 +18,7 @@ test("valid entry - lvl 1", () => {
   }))
 })
 
-test("valid entry - lvl 2", () => {
+test("schema: arrays", () => {
   let users = new Table('users', null).schema({
     id: 'string',
     age: 'number',
@@ -39,7 +37,7 @@ test("valid entry - lvl 2", () => {
   }))
 })
 
-test("valid entry - lvl 3", () => {
+test("schema: nested object", () => {
   let users = new Table('users', null).schema({
     id: 'string',
     age: 'number',
@@ -52,7 +50,7 @@ test("valid entry - lvl 3", () => {
   assert.ok(users.set({
     id: 'bob',
     age: 10,
-    setting: {
+    settings: {
       darkmode: true,
       volume: 100,
     }

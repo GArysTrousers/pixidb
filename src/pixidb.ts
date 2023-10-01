@@ -4,7 +4,15 @@ export interface Row {
   id: string;
 }
 
+export enum LogLevel {
+  None,
+  Init,
+  Operations,
+  Verbose
+}
+
 export class Table<T extends Row> {
+  static loglevel = LogLevel.None
   saveTimer: NodeJS.Timer | null = null;
   dbPath: string | null;
   name: string;
@@ -25,15 +33,19 @@ export class Table<T extends Row> {
       try {
         accessSync(this.tablePath)
         this.load()
+        if (Table.loglevel >= LogLevel.Init)
+          console.log(`${this.name}->init: loaded from file`);
       } catch (error: any) {
         if (error.code == 'ENOENT') {
           this.rows = []
-          console.log(`${this.name}->init: new db file`);
+          if (Table.loglevel >= LogLevel.Init)
+            console.log(`${this.name}->init: new db file`);
         } else throw error
       }
     } else {
       this.rows = []
-      console.log(`${this.name}->init: memory-only mode`);
+      if (Table.loglevel >= LogLevel.Init)
+        console.log(`${this.name}->init: memory-only mode`);
     }
   }
 
@@ -48,35 +60,40 @@ export class Table<T extends Row> {
    * input may contain more props and will return true
    */
   validate(input: any, schema: object = this.schemaObject) {
-    console.log(input);
+    if (Table.loglevel >= LogLevel.Verbose) {
+      console.log('Schema Validation:')
+      console.log(schema);
+      console.log('input:');
+      console.log(input);
+    }
     
     try {
       if (this.schemaObject != null) {
-        for (let [prop, type] of Object.entries(schema)) {
-          if (typeof (type) == 'string') {
-            if (!(prop in input)) {
-              throw ("Prop not in input: " + prop)
+        for (let [schemaProp, schemaType] of Object.entries(schema)) {
+          if (typeof (schemaType) == 'string') {
+            if (!(schemaProp in input)) {
+              throw ("Prop not in input: " + schemaProp)
             }
-            if (type == 'array') {
-              if (!Array.isArray(input[prop]))
+            if (schemaType == 'array') {
+              if (!Array.isArray(input[schemaProp]))
                 throw "Input was not an array"
             }
-            else if (!(typeof (input[prop]) == type)) {
-              throw (`Input was wrong type ${prop} ${type} ${typeof (input[prop])}`)
+            else if (!(typeof (input[schemaProp]) == schemaType)) {
+              throw (`Input was wrong type ${schemaProp} ${schemaType} ${typeof (input[schemaProp])}`)
             }
           }
-          else if (typeof (type) == 'object') {            
-            if (Array.isArray(input[prop]))
+          else if (typeof (schemaType) == 'object') {            
+            if (Array.isArray(input[schemaProp]))
               throw "Schema contains an array object"
-            console.log(input, prop);
             
-            if (!this.validate(input[prop], type))
+            if (!this.validate(input[schemaProp], schemaType))
               return false
           }
         }
       }
     } catch (error) {
-      console.log(error);
+      if (Table.loglevel >= LogLevel.Verbose)
+        console.log(`error: ${error.message}`);
       return false
     }
     return true
@@ -84,19 +101,19 @@ export class Table<T extends Row> {
 
   private load(): void {
     let rawdata = readFileSync(this.tablePath);
-    let loadedData = JSON.parse(rawdata.toString());
-    console.log(`${this.name}->init: loaded from file`);
-    this.rows = loadedData;
+    this.rows = JSON.parse(rawdata.toString());
   }
 
   private save(messsage: string = 'no message'): void {
-    console.log(messsage);
+    if (Table.loglevel >= LogLevel.Operations)
+      console.log(messsage);
     if (this.dbPath === null) return;
     if (!this.saveTimer) {
       this.saveTimer = setTimeout(() => {
         let json = JSON.stringify(this.rows)
         writeFileSync(this.tablePath, json)
-        console.log("db saved");
+        if (Table.loglevel >= LogLevel.Verbose)
+          console.log("db saved");
       }, 1000)
     }
     else this.saveTimer.refresh()
@@ -129,6 +146,8 @@ export class Table<T extends Row> {
       this.save(`${this.name}->added: ${value.id}`)
       return true;
     }
+    if (Table.loglevel >= LogLevel.Operations)
+      console.log(`${this.name}->failed new id: ${value.id}`)
     return false
   }
 
@@ -164,7 +183,11 @@ export class Table<T extends Row> {
    * */
   removeOne(id: string): boolean {
     let index = this.rows.findIndex(x => x.id == id)
-    if (index == -1) return false;
+    if (index == -1) {
+    if (Table.loglevel >= LogLevel.Operations)
+      console.log(`${this.name}->failed remove id: ${id}`);
+      return false;
+    }
     this.rows.splice(index, 1)
     this.save(`${this.name}->removed: ${id}`)
     return true;
