@@ -60,15 +60,14 @@ export class Table<T extends Row> {
    * input may contain more props and will return true
    */
   validate(input: any, schema: object = this.schemaObject) {
-    if (Table.loglevel >= LogLevel.Verbose) {
-      console.log('Schema Validation:')
-      console.log(schema);
-      console.log('input:');
-      console.log(input);
-    }
-    
     try {
       if (this.schemaObject != null) {
+        if (Table.loglevel >= LogLevel.Verbose) {
+          console.log('Schema Validation:')
+          console.log(schema);
+          console.log('input:');
+          console.log(input);
+        }
         for (let [schemaProp, schemaType] of Object.entries(schema)) {
           if (typeof (schemaType) == 'string') {
             if (!(schemaProp in input)) {
@@ -82,10 +81,10 @@ export class Table<T extends Row> {
               throw (`Input was wrong type ${schemaProp} ${schemaType} ${typeof (input[schemaProp])}`)
             }
           }
-          else if (typeof (schemaType) == 'object') {            
+          else if (typeof (schemaType) == 'object') {
             if (Array.isArray(input[schemaProp]))
               throw "Schema contains an array object"
-            
+
             if (!this.validate(input[schemaProp], schemaType))
               return false
           }
@@ -139,7 +138,11 @@ export class Table<T extends Row> {
    * If it is, will not insert and will return false, otherwise true.
    * */
   new(value: T): boolean {
-    if (!this.validate(value)) return false
+    if (!this.validate(value)) {
+      if (Table.loglevel >= LogLevel.Operations)
+        console.log(`${this.name}->failed new id:${value.id}->validation failed`)
+      return false
+    }
     let index = this.rows.findIndex(x => x.id == value.id)
     if (index == -1) { // if not in table
       this.rows.push(value);
@@ -147,7 +150,7 @@ export class Table<T extends Row> {
       return true;
     }
     if (Table.loglevel >= LogLevel.Operations)
-      console.log(`${this.name}->failed new id: ${value.id}`)
+      console.log(`${this.name}->failed set id: ${value.id}->id already in use`)
     return false
   }
 
@@ -157,7 +160,11 @@ export class Table<T extends Row> {
    * If it does not match the schema, will return false, otherwise true.
    * */
   set(value: T): boolean {
-    if (!this.validate(value)) return false
+    if (!this.validate(value)) {
+      if (Table.loglevel >= LogLevel.Operations)
+        console.log(`${this.name}->failed set id: ${value.id}->validation failed`)
+      return false
+    }
     let index = this.rows.findIndex(x => x.id == value.id)
     if (index == -1) { // if not in table
       this.rows.push(value);
@@ -184,8 +191,8 @@ export class Table<T extends Row> {
   removeOne(id: string): boolean {
     let index = this.rows.findIndex(x => x.id == id)
     if (index == -1) {
-    if (Table.loglevel >= LogLevel.Operations)
-      console.log(`${this.name}->failed remove id: ${id}`);
+      if (Table.loglevel >= LogLevel.Operations)
+        console.log(`${this.name}->failed remove id: ${id}`);
       return false;
     }
     this.rows.splice(index, 1)

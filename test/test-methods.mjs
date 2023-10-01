@@ -1,10 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { Table } from "../dist/pixidb.js";
+import { LogLevel, Table } from "../dist/pixidb.js";
+
+Table.loglevel = LogLevel.None
 
 let users = new Table('users', null)
-
 
 test(".set()", () => {
   assert.ok(users.set({ id: 'bob', age: 10 }))

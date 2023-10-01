@@ -1,7 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { Table } from "../dist/pixidb.js";
+import { LogLevel, Table } from "../dist/pixidb.js";
+
+Table.loglevel = LogLevel.None
 
 test("schema: basic types", () => {
 
@@ -15,6 +17,12 @@ test("schema: basic types", () => {
     id: 'bob',
     age: 10,
     verified: true,
+  }))
+  
+  assert.ok(!users.set({
+    id: 'bill',
+    age: 10,
+    verified: 1,
   }))
 })
 
@@ -35,6 +43,13 @@ test("schema: arrays", () => {
       'user'
     ],
   }))
+
+  assert.ok(!users.set({
+    id: 'bill',
+    age: 10,
+    verified: true,
+    groups: 10,
+  }))
 })
 
 test("schema: nested object", () => {
@@ -54,5 +69,11 @@ test("schema: nested object", () => {
       darkmode: true,
       volume: 100,
     }
+  }))
+
+  assert.ok(!users.set({
+    id: 'bill',
+    age: 10,
+    settings: "uh oh"
   }))
 })
