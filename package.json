@@ -1,7 +1,7 @@
 {
   "name": "pixidb",
   "version": "0.0.1",
-  "description": "A small in-memory db",
+  "description": "A small db",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
